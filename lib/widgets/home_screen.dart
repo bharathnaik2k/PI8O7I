@@ -1,6 +1,8 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:assignment_prototype_pi8o7i/widgets/selectwidget_screen.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -17,18 +19,28 @@ class _HomeScreenWidgetState extends State<HomeScreenWidget> {
     false,
     false,
   ];
+
   bool atListOneMessage = false;
   File? image;
+  bool gallery = true;
 
-  //Image Picker Fun.
   void pickImage() async {
-    final pickedImage =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedImage = await ImagePicker().pickImage(
+        source: gallery == true ? ImageSource.gallery : ImageSource.camera);
     setState(() {
       if (pickedImage != null) {
         image = File(pickedImage.path);
       }
     });
+  }
+
+  uploadProfileImage() async {
+    Reference reference =
+        FirebaseStorage.instance.ref().child('profileImage/${"hi"}');
+    UploadTask uploadTask = reference.putFile(image!);
+    TaskSnapshot snapshot = await uploadTask;
+    var imageUrl = await snapshot.ref.getDownloadURL();
+    log(imageUrl);
   }
 
   @override
@@ -84,7 +96,87 @@ class _HomeScreenWidgetState extends State<HomeScreenWidget> {
                 if (selectedWidget[1] == true)
                   InkWell(
                     onTap: () {
-                      pickImage();
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) {
+                          return SizedBox(
+                              width: double.infinity,
+                              // height: MediaQuery.sizeOf(context).height,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(14.0),
+                                    child: TextButton(
+                                      style: ButtonStyle(
+                                        minimumSize:
+                                            const MaterialStatePropertyAll(
+                                          Size(double.infinity, 50),
+                                        ),
+                                        shape: MaterialStatePropertyAll(
+                                          RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                        ),
+                                        side: const MaterialStatePropertyAll(
+                                          BorderSide(width: 1),
+                                        ),
+                                        backgroundColor:
+                                            const MaterialStatePropertyAll(
+                                                Colors.greenAccent),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          gallery = true;
+                                        });
+                                        pickImage();
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text(
+                                        "Gallery",
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(14.0),
+                                    child: TextButton(
+                                      style: ButtonStyle(
+                                        minimumSize:
+                                            const MaterialStatePropertyAll(
+                                          Size(double.infinity, 50),
+                                        ),
+                                        shape: MaterialStatePropertyAll(
+                                          RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                        ),
+                                        side: const MaterialStatePropertyAll(
+                                          BorderSide(width: 1),
+                                        ),
+                                        backgroundColor:
+                                            const MaterialStatePropertyAll(
+                                                Colors.greenAccent),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          gallery = false;
+                                        });
+                                        pickImage();
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text(
+                                        "Camera",
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ));
+                        },
+                      );
                     },
                     child: Container(
                       margin: const EdgeInsets.all(12.0),
@@ -120,7 +212,7 @@ class _HomeScreenWidgetState extends State<HomeScreenWidget> {
                         Colors.white,
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       if (selectedWidget[0] == true ||
                           selectedWidget[1] == true) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +224,7 @@ class _HomeScreenWidgetState extends State<HomeScreenWidget> {
                             backgroundColor: Color.fromARGB(255, 204, 230, 204),
                           ),
                         );
+                        uploadProfileImage();
                       } else {
                         setState(() {
                           atListOneMessage = true;
@@ -191,5 +284,30 @@ class _HomeScreenWidgetState extends State<HomeScreenWidget> {
         ),
       ),
     );
+  }
+}
+
+class Mo {
+  int? userId;
+  int? id;
+  String? title;
+  String? body;
+
+  Mo({this.userId, this.id, this.title, this.body});
+
+  Mo.fromJson(Map<String, dynamic> json) {
+    userId = json['userId'];
+    id = json['id'];
+    title = json['title'];
+    body = json['body'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['userId'] = userId;
+    data['id'] = id;
+    data['title'] = title;
+    data['body'] = body;
+    return data;
   }
 }
